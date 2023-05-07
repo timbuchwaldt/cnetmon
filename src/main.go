@@ -13,6 +13,8 @@ import (
 
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/rs/zerolog/log"
+
+	_ "go.uber.org/automaxprocs"
 )
 
 var resolveDNSServicesLock sync.Mutex
