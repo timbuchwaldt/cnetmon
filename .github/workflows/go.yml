@@ -21,7 +21,7 @@ jobs:
           go-version: "1.20"
 
       - name: Build
-        run: cd src && go build -ldflags="-w -s" -o ../out/cnetmon .'
+        run: cd src && go build -ldflags="-w -s" -o ../out/cnetmon .
 
       - name: Test
         run: cd src &&  go test -v ./...
