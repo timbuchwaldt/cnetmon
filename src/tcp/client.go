@@ -16,7 +16,6 @@ func Connect(addr string, m *metrics.Metrics, inLabels []string, wg *sync.WaitGr
 
 	if err != nil {
 		log.Error().Err(err).Msg("Can't resolve")
-		wg.Done()
 		return
 	}
 	start := time.Now()
@@ -25,7 +24,6 @@ func Connect(addr string, m *metrics.Metrics, inLabels []string, wg *sync.WaitGr
 	if err != nil {
 
 		log.Error().Err(err).Msg("Can't connect")
-		wg.Done()
 		return
 	}
 	conn.Write([]byte("ping"))
@@ -36,7 +34,6 @@ func Connect(addr string, m *metrics.Metrics, inLabels []string, wg *sync.WaitGr
 	_, err = conn.Read(reply)
 	if err != nil {
 		log.Error().Err(err).Msg("Can't read reply")
-		wg.Done()
 		return
 	}
 

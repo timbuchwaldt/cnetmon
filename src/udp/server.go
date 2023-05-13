@@ -1,16 +1,17 @@
 package udp
 
 import (
-	"log"
+	"cnetmon/metrics"
+	"cnetmon/utils"
+
 	"net"
 	"time"
 )
 
-func StartServer() {
+func StartServer(m *metrics.Metrics) {
 	udpServer, err := net.ListenPacket("udp", ":7788")
-	if err != nil {
-		log.Fatal(err)
-	}
+	utils.CheckErrorFatal(err)
+
 	defer udpServer.Close()
 
 	for {

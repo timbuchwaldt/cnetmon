@@ -22,7 +22,6 @@ func NewMetrics() *Metrics {
 		},
 			[]string{"mode"},
 		),
-
 		ResolvedHeadlessServiceHosts: promauto.NewGauge(prometheus.GaugeOpts{
 			Name: "cnetmon_resolved_headless_service_hosts",
 			Help: "Number of hosts resolved via headless service",

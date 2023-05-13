@@ -24,10 +24,10 @@ var resolveK8S []string
 
 func main() {
 	m := metrics.NewMetrics()
-	log.Info().Msg("Starting continuous network monitoring")
+	log.Info().Msg("Starting continuous network monitoring cnetmon")
 
 	go tcp.StartServer(m)
-	go udp.StartServer()
+	go udp.StartServer(m)
 
 	go generic_client.Connect(&resolveK8S, &resolveK8SLock, m, []string{"k8s", "tcp"}, tcp.Connect)
 	go generic_client.Connect(&resolveDNSServices, &resolveDNSServicesLock, m, []string{"dns", "tcp"}, tcp.Connect)

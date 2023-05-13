@@ -13,9 +13,9 @@ import (
 func StartServer(m *metrics.Metrics) {
 	service := ":7777"
 	tcpAddr, err := net.ResolveTCPAddr("tcp4", service)
-	utils.CheckError(err)
+	utils.CheckErrorFatal(err)
 	listener, err := net.ListenTCP("tcp", tcpAddr)
-	utils.CheckError(err)
+	utils.CheckErrorFatal(err)
 	for {
 		conn, err := listener.Accept()
 		if err != nil {
