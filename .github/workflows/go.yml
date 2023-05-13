@@ -26,3 +26,6 @@ jobs:
 
       - name: Test
         run: cd src &&  go test -v ./...
+
+      - name: Build the Docker image
+        run: docker build . --file Dockerfile --tag cnetmon:$(date +%s)
