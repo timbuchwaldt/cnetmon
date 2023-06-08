@@ -38,6 +38,8 @@ func main() {
 	go k8s.UpdateServiceK8S(&resolveK8SLock, &resolveK8S, m)
 	go dns.UpdateServiceDNS(&resolveDNSServicesLock, &resolveDNSServices, m)
 
+	go tcp.PersistentConnectionManager(&resolveK8S, &resolveK8SLock, m)
+
 	http.Handle("/metrics", promhttp.Handler())
 	http.ListenAndServe(":2808", nil)
 }

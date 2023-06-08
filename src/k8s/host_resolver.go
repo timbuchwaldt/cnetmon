@@ -32,6 +32,10 @@ func UpdateServiceK8S(lock *sync.Mutex, services *[]string, m *metrics.Metrics) 
 		*services = []string{}
 
 		for _, p := range items.Items {
+			if p.Status.PodIP == "" {
+				// This can be null if the IP hasn't been assigned yet -> Hopefully it appears in the next iteration
+				break
+			}
 			*services = append(*services, p.Status.PodIP)
 		}
 		lock.Unlock()

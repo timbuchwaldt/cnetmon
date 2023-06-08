@@ -12,12 +12,13 @@ import (
 func Connect(addr string, m *metrics.Metrics, inLabels []string, wg *sync.WaitGroup) {
 	defer wg.Done()
 	tcpAddr, err := net.ResolveTCPAddr("tcp", addr+":7777")
-	labels := append(inLabels, tcpAddr.IP.String())
 
 	if err != nil {
 		log.Error().Err(err).Msg("Can't resolve")
 		return
 	}
+	labels := append(inLabels, tcpAddr.IP.String())
+
 	start := time.Now()
 	dialer := net.Dialer{Timeout: 2 * time.Second}
 	conn, err := dialer.Dial("tcp", addr+":7777")

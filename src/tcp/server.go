@@ -3,6 +3,7 @@ package tcp
 import (
 	"net"
 	"strings"
+	"time"
 
 	"cnetmon/metrics"
 	"cnetmon/utils"
@@ -32,10 +33,11 @@ func handleTCPClient(conn net.Conn, m *metrics.Metrics) {
 
 	request := make([]byte, 128)
 	for {
+		conn.SetDeadline(time.Now().Add(30 * time.Second))
 		i, err := conn.Read(request)
 		if err != nil {
-			connLogger.Info().Err(err).Msg("Socket read error")
-			break
+			connLogger.Info().Err(err).Msg("Socket read error!")
+			return
 		}
 		if i == 0 {
 			connLogger.Info().Msg("0 bytes read, closing connection")

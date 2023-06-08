@@ -11,13 +11,14 @@ func Connect(addr string, m *metrics.Metrics, inLabels []string, wg *sync.WaitGr
 
 	defer wg.Done()
 	udpServer, err := net.ResolveUDPAddr("udp", addr+":7788")
-	labels := append(inLabels, udpServer.IP.String())
 
 	if err != nil {
 		println("ResolveUDPAddr failed:", err.Error())
 		// os.Exit(1)
 		return
 	}
+	labels := append(inLabels, udpServer.IP.String())
+
 	start := time.Now()
 	conn, err := net.DialUDP("udp", nil, udpServer)
 	if err != nil {
