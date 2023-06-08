@@ -3,7 +3,6 @@ package tcp
 import (
 	"cnetmon/metrics"
 	"cnetmon/utils"
-	"fmt"
 	"net"
 	"sync"
 	"time"
@@ -36,7 +35,6 @@ func PersistentConnectionManager(outsideAddresses *[]string, mutex *sync.Mutex, 
 		addresses := make([]string, len(*outsideAddresses))
 		copy(addresses, *outsideAddresses)
 		mutex.Unlock()
-		fmt.Println(addresses)
 
 		newConnections := map[string]PersistentConnection{}
 		for _, c := range pcs.connections {
@@ -85,12 +83,17 @@ func HandlePersistentConnection(pc PersistentConnection, m *metrics.Metrics) {
 
 	start := time.Now()
 	lt, err := m.PersistentLifetime.CurryWith(prometheus.Labels{"direction": "client", "hostname": pc.addr})
-	pt, err := m.PingTiming.CurryWith(prometheus.Labels{"hostname": pc.addr})
 	if err != nil {
-
 		log.Error().Err(err).Msg("Can't label")
 		return
 	}
+	pt, err := m.PingTiming.CurryWith(prometheus.Labels{"hostname": pc.addr})
+	if err != nil {
+		log.Error().Err(err).Msg("Can't label")
+		return
+	}
+
+	connLogger := log.With().Str("component", "PersistentConnection").Str("remoteIP", pc.addr).Logger()
 	dialer := net.Dialer{Timeout: 2 * time.Second}
 	conn, err := dialer.Dial("tcp", pc.addr+":7777")
 	if err != nil {
@@ -105,14 +108,14 @@ func HandlePersistentConnection(pc PersistentConnection, m *metrics.Metrics) {
 		msg, ok := <-pc.c
 		if ok {
 			if msg.command == "disconnect" {
-				fmt.Println("Closing connection")
+				connLogger.Error().Msg("Closing connection")
 				pc.completed = true
 				conn.Close()
 				return
 			}
 			if msg.command == "ping" {
 				lt.WithLabelValues().Set(float64(time.Since(start).Seconds()))
-				fmt.Println("In Handle Persistent Connection ping", pc)
+				connLogger.Debug().Msg("In Handle Persistent Connection ping")
 				pingStart := time.Now()
 				conn.Write([]byte("ping"))
 
@@ -122,14 +125,14 @@ func HandlePersistentConnection(pc PersistentConnection, m *metrics.Metrics) {
 				_, err = conn.Read(reply)
 				pt.WithLabelValues().Observe(float64(time.Since(pingStart).Milliseconds()))
 				if err != nil {
-					log.Error().Err(err).Msg("Can't read reply")
+					connLogger.Error().Err(err).Msg("Can't read reply")
 					conn.Close()
 					return
 				}
 				conn.SetDeadline(time.Now().Add(30 * time.Second))
 			}
 		} else {
-			fmt.Println("Not OK - weird.")
+			connLogger.Warn().Msg("Not OK - weird.")
 			pc.completed = true
 			break
 		}
