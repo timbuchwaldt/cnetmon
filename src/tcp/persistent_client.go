@@ -26,6 +26,16 @@ type ConnectionMessage struct {
 	command string
 }
 
+func IsClosed(ch <-chan ConnectionMessage) bool {
+	select {
+	case <-ch:
+		return true
+	default:
+	}
+
+	return false
+}
+
 func PersistentConnectionManager(outsideAddresses *[]structs.Target, mutex *sync.Mutex, m *metrics.Metrics) {
 	var pcs = PersistentConnections{
 		connections: map[string]PersistentConnection{},
@@ -56,10 +66,14 @@ func PersistentConnectionManager(outsideAddresses *[]structs.Target, mutex *sync
 		}
 
 		for _, pc := range pcs.connections {
-			if !utils.IPTargetInSlice(pc.target, addresses) {
-				pc.c <- ConnectionMessage{command: "disconnect"}
+			if IsClosed(pc.c) {
+				pc.completed = true
+			} else {
+				if !utils.IPTargetInSlice(pc.target, addresses) {
+					pc.c <- ConnectionMessage{command: "disconnect"}
+				}
+				pc.c <- ConnectionMessage{command: "ping"}
 			}
-			pc.c <- ConnectionMessage{command: "ping"}
 		}
 		time.Sleep(1 * time.Second)
 	}
@@ -77,6 +91,7 @@ func CreatePersistentConnection(target structs.Target, m *metrics.Metrics) Persi
 }
 
 func HandlePersistentConnection(pc PersistentConnection, m *metrics.Metrics) {
+	defer close(pc.c)
 	start := time.Now()
 	lt, err := m.PersistentLifetime.CurryWith(prometheus.Labels{"direction": "client", "node_name": pc.target.NodeName, "pod_ip": pc.target.IP})
 	if err != nil {
@@ -109,7 +124,6 @@ func HandlePersistentConnection(pc PersistentConnection, m *metrics.Metrics) {
 			if msg.command == "disconnect" {
 				connLogger.Error().Msg("Closing connection")
 				pc.completed = true
-				conn.Close()
 				return
 			}
 			if msg.command == "ping" {
@@ -125,7 +139,6 @@ func HandlePersistentConnection(pc PersistentConnection, m *metrics.Metrics) {
 				pt.WithLabelValues().Observe(float64(time.Since(pingStart).Milliseconds()))
 				if err != nil {
 					connLogger.Error().Err(err).Msg("Can't read reply")
-					conn.Close()
 					pc.completed = true
 					return
 				}
