@@ -38,10 +38,9 @@ func Connect(target structs.Target, m *metrics.Metrics, inLabels []string, wg *s
 		log.Error().Err(err).Msg("Can't read reply")
 		return
 	}
+	m.Timing.WithLabelValues(labels...).Observe(float64(time.Since(start).Milliseconds()))
 
 	conn.Write([]byte("bye"))
 
 	conn.Close()
-	m.Timing.WithLabelValues(labels...).Observe(float64(time.Since(start).Milliseconds()))
-
 }

@@ -23,6 +23,7 @@ func UpdateServiceK8S(lock *sync.Mutex, services *[]structs.Target, m *metrics.M
 		start := time.Now()
 		items, err := clientset.CoreV1().Pods("cnetmon").List(ctx, v1.ListOptions{
 			LabelSelector: "name=cnetmon",
+			FieldSelector: "status.phase=Running",
 		})
 		m.ResolutionTiming.WithLabelValues("k8s").Observe(float64(time.Since(start).Milliseconds()))
 
