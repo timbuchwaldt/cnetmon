@@ -13,7 +13,7 @@ import (
 )
 
 type PersistentConnections struct {
-	connections map[structs.Target]PersistentConnection
+	connections map[string]PersistentConnection
 }
 
 type PersistentConnection struct {
@@ -28,7 +28,7 @@ type ConnectionMessage struct {
 
 func PersistentConnectionManager(outsideAddresses *[]structs.Target, mutex *sync.Mutex, m *metrics.Metrics) {
 	var pcs = PersistentConnections{
-		connections: map[structs.Target]PersistentConnection{},
+		connections: map[string]PersistentConnection{},
 	}
 
 	for {
@@ -37,10 +37,10 @@ func PersistentConnectionManager(outsideAddresses *[]structs.Target, mutex *sync
 		copy(addresses, *outsideAddresses)
 		mutex.Unlock()
 
-		newConnections := map[structs.Target]PersistentConnection{}
+		newConnections := map[string]PersistentConnection{}
 		for _, c := range pcs.connections {
 			if !c.completed {
-				newConnections[c.target] = c
+				newConnections[c.target.IP] = c
 			} else {
 				log.Info().Str("remoteIP", c.target.IP).Msg("Removing persistent connection")
 			}
@@ -48,11 +48,10 @@ func PersistentConnectionManager(outsideAddresses *[]structs.Target, mutex *sync
 		pcs.connections = newConnections
 
 		for _, addr := range addresses {
-			_, contains := pcs.connections[addr]
+			_, contains := pcs.connections[addr.IP]
 			if !contains {
 				log.Info().Str("remoteIP", addr.IP).Msg("Creating persistent connection")
-
-				pcs.connections[addr] = CreatePersistentConnection(addr, m)
+				pcs.connections[addr.IP] = CreatePersistentConnection(addr, m)
 			}
 		}
 
