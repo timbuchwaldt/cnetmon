@@ -29,7 +29,6 @@ func UpdateServiceK8S(lock *sync.Mutex, services *[]structs.Target, m *metrics.M
 		if err != nil {
 			logger.Error().Err(err)
 		}
-		lock.Lock()
 		*services = []structs.Target{}
 
 		for _, p := range items.Items {
@@ -41,9 +40,11 @@ func UpdateServiceK8S(lock *sync.Mutex, services *[]structs.Target, m *metrics.M
 				NodeName: p.Spec.NodeName,
 				IP:       p.Status.PodIP,
 			}
+			lock.Lock()
 			*services = append(*services, t)
+			lock.Unlock()
+
 		}
-		lock.Unlock()
 
 		m.ResolvedK8SHosts.Set(float64(len(items.Items)))
 		time.Sleep(30 * time.Second)

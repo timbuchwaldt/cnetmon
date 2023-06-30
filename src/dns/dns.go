@@ -23,7 +23,6 @@ func UpdateServiceDNS(lock *sync.Mutex, services *[]structs.Target, m *metrics.M
 			logger.Error().Err(err).Msg("Error resolving DNS")
 		}
 
-		lock.Lock()
 		// mutex lock here so we can work in peace
 		*services = []structs.Target{}
 		for _, s := range addrs {
@@ -32,9 +31,11 @@ func UpdateServiceDNS(lock *sync.Mutex, services *[]structs.Target, m *metrics.M
 				NodeName: "unknown",
 				IP:       s.Target,
 			}
+			lock.Lock()
 			*services = append(*services, t)
+			lock.Unlock()
+
 		}
-		lock.Unlock()
 		m.ResolvedHeadlessServiceHosts.Set(float64(len(*services)))
 
 		time.Sleep(30 * time.Second)
