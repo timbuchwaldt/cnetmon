@@ -2,6 +2,7 @@ package tcp
 
 import (
 	"cnetmon/metrics"
+	"cnetmon/structs"
 	"cnetmon/utils"
 	"net"
 	"sync"
@@ -12,12 +13,12 @@ import (
 )
 
 type PersistentConnections struct {
-	connections map[string]PersistentConnection
+	connections map[structs.Target]PersistentConnection
 }
 
 type PersistentConnection struct {
 	c         chan ConnectionMessage
-	addr      string
+	target    structs.Target
 	completed bool
 }
 
@@ -25,21 +26,21 @@ type ConnectionMessage struct {
 	command string
 }
 
-func PersistentConnectionManager(outsideAddresses *[]string, mutex *sync.Mutex, m *metrics.Metrics) {
+func PersistentConnectionManager(outsideAddresses *[]structs.Target, mutex *sync.Mutex, m *metrics.Metrics) {
 	var pcs = PersistentConnections{
-		connections: map[string]PersistentConnection{},
+		connections: map[structs.Target]PersistentConnection{},
 	}
 
 	for {
 		mutex.Lock()
-		addresses := make([]string, len(*outsideAddresses))
+		addresses := make([]structs.Target, len(*outsideAddresses))
 		copy(addresses, *outsideAddresses)
 		mutex.Unlock()
 
-		newConnections := map[string]PersistentConnection{}
+		newConnections := map[structs.Target]PersistentConnection{}
 		for _, c := range pcs.connections {
 			if !c.completed {
-				newConnections[c.addr] = c
+				newConnections[c.target] = c
 			}
 		}
 		pcs.connections = newConnections
@@ -52,7 +53,7 @@ func PersistentConnectionManager(outsideAddresses *[]string, mutex *sync.Mutex, 
 		}
 
 		for _, pc := range pcs.connections {
-			if !utils.StringInSlice(pc.addr, addresses) {
+			if !utils.IPTargetInSlice(pc.target, addresses) {
 				pc.c <- ConnectionMessage{command: "disconnect"}
 			}
 			pc.c <- ConnectionMessage{command: "ping"}
@@ -62,10 +63,10 @@ func PersistentConnectionManager(outsideAddresses *[]string, mutex *sync.Mutex, 
 
 }
 
-func CreatePersistentConnection(addr string, m *metrics.Metrics) PersistentConnection {
+func CreatePersistentConnection(target structs.Target, m *metrics.Metrics) PersistentConnection {
 	pc := PersistentConnection{
-		c:    make(chan ConnectionMessage),
-		addr: addr,
+		c:      make(chan ConnectionMessage),
+		target: target,
 	}
 
 	go HandlePersistentConnection(pc, m)
@@ -73,29 +74,21 @@ func CreatePersistentConnection(addr string, m *metrics.Metrics) PersistentConne
 }
 
 func HandlePersistentConnection(pc PersistentConnection, m *metrics.Metrics) {
-	//tcpAddr, err := net.ResolveTCPAddr("tcp", addr+":7777")
-
-	//if err != nil {
-	//		log.Error().Err(err).Msg("Can't resolve")
-	//		return
-	//	}
-	//labels := append(inLabels, tcpAddr.IP.String())
-
 	start := time.Now()
-	lt, err := m.PersistentLifetime.CurryWith(prometheus.Labels{"direction": "client", "hostname": pc.addr})
+	lt, err := m.PersistentLifetime.CurryWith(prometheus.Labels{"direction": "client", "node_name": pc.target.NodeName, "pod_ip": pc.target.IP})
 	if err != nil {
 		log.Error().Err(err).Msg("Can't label")
 		return
 	}
-	pt, err := m.PingTiming.CurryWith(prometheus.Labels{"hostname": pc.addr})
+	pt, err := m.PingTiming.CurryWith(prometheus.Labels{"node_name": pc.target.NodeName, "pod_ip": pc.target.IP})
 	if err != nil {
 		log.Error().Err(err).Msg("Can't label")
 		return
 	}
 
-	connLogger := log.With().Str("component", "PersistentConnection").Str("remoteIP", pc.addr).Logger()
+	connLogger := log.With().Str("component", "PersistentConnection").Str("remoteIP", pc.target.IP).Logger()
 	dialer := net.Dialer{Timeout: 2 * time.Second}
-	conn, err := dialer.Dial("tcp", pc.addr+":7777")
+	conn, err := dialer.Dial("tcp", pc.target.IP+":7777")
 	if err != nil {
 
 		log.Error().Err(err).Msg("Can't connect")
@@ -115,7 +108,7 @@ func HandlePersistentConnection(pc PersistentConnection, m *metrics.Metrics) {
 			}
 			if msg.command == "ping" {
 				lt.WithLabelValues().Set(float64(time.Since(start).Seconds()))
-				connLogger.Debug().Msg("In Handle Persistent Connection ping")
+				connLogger.Trace().Msg("In Handle Persistent Connection ping")
 				pingStart := time.Now()
 				conn.Write([]byte("ping"))
 

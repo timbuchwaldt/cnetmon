@@ -2,6 +2,7 @@ package k8s
 
 import (
 	"cnetmon/metrics"
+	"cnetmon/structs"
 	"context"
 	"sync"
 	"time"
@@ -12,7 +13,7 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 )
 
-func UpdateServiceK8S(lock *sync.Mutex, services *[]string, m *metrics.Metrics) {
+func UpdateServiceK8S(lock *sync.Mutex, services *[]structs.Target, m *metrics.Metrics) {
 	logger := log.With().Str("component", "updateServiceK8S").Logger()
 	ctx := context.Background()
 	config := ctrl.GetConfigOrDie()
@@ -29,14 +30,18 @@ func UpdateServiceK8S(lock *sync.Mutex, services *[]string, m *metrics.Metrics) 
 			logger.Error().Err(err)
 		}
 		lock.Lock()
-		*services = []string{}
+		*services = []structs.Target{}
 
 		for _, p := range items.Items {
 			if p.Status.PodIP == "" {
 				// This can be null if the IP hasn't been assigned yet -> Hopefully it appears in the next iteration
 				break
 			}
-			*services = append(*services, p.Status.PodIP)
+			t := structs.Target{
+				NodeName: p.Spec.NodeName,
+				IP:       p.Status.PodIP,
+			}
+			*services = append(*services, t)
 		}
 		lock.Unlock()
 

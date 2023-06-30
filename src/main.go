@@ -5,6 +5,7 @@ import (
 	"cnetmon/generic_client"
 	"cnetmon/k8s"
 	"cnetmon/metrics"
+	"cnetmon/structs"
 	"cnetmon/tcp"
 	"cnetmon/udp"
 
@@ -18,9 +19,10 @@ import (
 )
 
 var resolveDNSServicesLock sync.Mutex
-var resolveDNSServices []string
+var resolveDNSServices []structs.Target
+
 var resolveK8SLock sync.Mutex
-var resolveK8S []string
+var resolveK8S []structs.Target
 
 func main() {
 	m := metrics.NewMetrics()
@@ -32,8 +34,8 @@ func main() {
 	go generic_client.Connect(&resolveK8S, &resolveK8SLock, m, []string{"k8s", "tcp"}, tcp.Connect)
 	go generic_client.Connect(&resolveDNSServices, &resolveDNSServicesLock, m, []string{"dns", "tcp"}, tcp.Connect)
 
-	go generic_client.Connect(&resolveK8S, &resolveK8SLock, m, []string{"k8s", "udp"}, udp.Connect)
-	go generic_client.Connect(&resolveDNSServices, &resolveDNSServicesLock, m, []string{"dns", "udp"}, udp.Connect)
+	// go generic_client.Connect(&resolveK8S, &resolveK8SLock, m, []string{"k8s", "udp"}, udp.Connect)
+	// go generic_client.Connect(&resolveDNSServices, &resolveDNSServicesLock, m, []string{"dns", "udp"}, udp.Connect)
 
 	go k8s.UpdateServiceK8S(&resolveK8SLock, &resolveK8S, m)
 	go dns.UpdateServiceDNS(&resolveDNSServicesLock, &resolveDNSServices, m)

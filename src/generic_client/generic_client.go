@@ -2,16 +2,17 @@ package generic_client
 
 import (
 	"cnetmon/metrics"
+	"cnetmon/structs"
 	"sync"
 	"time"
 )
 
-func Connect(outsideAddresses *[]string, mutex *sync.Mutex, m *metrics.Metrics, labels []string, function func(string, *metrics.Metrics, []string, *sync.WaitGroup)) {
+func Connect(outsideAddresses *[]structs.Target, mutex *sync.Mutex, m *metrics.Metrics, labels []string, function func(structs.Target, *metrics.Metrics, []string, *sync.WaitGroup)) {
 
 	for {
 		// be ultra-cautious here so we are 100% sure the slice isn't just updated.
 		mutex.Lock()
-		addresses := make([]string, len(*outsideAddresses))
+		addresses := make([]structs.Target, len(*outsideAddresses))
 		copy(addresses, *outsideAddresses)
 		mutex.Unlock()
 

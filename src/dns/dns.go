@@ -2,6 +2,7 @@ package dns
 
 import (
 	"cnetmon/metrics"
+	"cnetmon/structs"
 	"net"
 	"sync"
 	"time"
@@ -9,7 +10,7 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
-func UpdateServiceDNS(lock *sync.Mutex, services *[]string, m *metrics.Metrics) {
+func UpdateServiceDNS(lock *sync.Mutex, services *[]structs.Target, m *metrics.Metrics) {
 	logger := log.With().Str("component", "updateServiceDNS").Logger()
 
 	for {
@@ -24,10 +25,14 @@ func UpdateServiceDNS(lock *sync.Mutex, services *[]string, m *metrics.Metrics) 
 
 		lock.Lock()
 		// mutex lock here so we can work in peace
-		*services = []string{}
+		*services = []structs.Target{}
 		for _, s := range addrs {
 			logger.Debug().Msg(s.Target)
-			*services = append(*services, s.Target)
+			t := structs.Target{
+				NodeName: "unknown",
+				IP:       s.Target,
+			}
+			*services = append(*services, t)
 		}
 		lock.Unlock()
 		m.ResolvedHeadlessServiceHosts.Set(float64(len(*services)))

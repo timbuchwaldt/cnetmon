@@ -2,6 +2,7 @@ package tcp
 
 import (
 	"cnetmon/metrics"
+	"cnetmon/structs"
 	"net"
 	"sync"
 	"time"
@@ -9,9 +10,9 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
-func Connect(addr string, m *metrics.Metrics, inLabels []string, wg *sync.WaitGroup) {
+func Connect(target structs.Target, m *metrics.Metrics, inLabels []string, wg *sync.WaitGroup) {
 	defer wg.Done()
-	tcpAddr, err := net.ResolveTCPAddr("tcp", addr+":7777")
+	tcpAddr, err := net.ResolveTCPAddr("tcp", target.IP+":7777")
 
 	if err != nil {
 		log.Error().Err(err).Msg("Can't resolve")
@@ -21,7 +22,7 @@ func Connect(addr string, m *metrics.Metrics, inLabels []string, wg *sync.WaitGr
 
 	start := time.Now()
 	dialer := net.Dialer{Timeout: 2 * time.Second}
-	conn, err := dialer.Dial("tcp", addr+":7777")
+	conn, err := dialer.Dial("tcp", target.IP+":7777")
 	if err != nil {
 
 		log.Error().Err(err).Msg("Can't connect")
