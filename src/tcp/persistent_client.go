@@ -82,7 +82,7 @@ func PersistentConnectionManager(outsideAddresses *[]structs.Target, mutex *sync
 
 func CreatePersistentConnection(target structs.Target, m *metrics.Metrics) PersistentConnection {
 	pc := PersistentConnection{
-		c:      make(chan ConnectionMessage),
+		c:      make(chan ConnectionMessage, 30),
 		target: target,
 	}
 
@@ -91,7 +91,6 @@ func CreatePersistentConnection(target structs.Target, m *metrics.Metrics) Persi
 }
 
 func HandlePersistentConnection(pc PersistentConnection, m *metrics.Metrics) {
-	defer close(pc.c)
 	start := time.Now()
 	lt, err := m.PersistentLifetime.CurryWith(prometheus.Labels{"direction": "client", "node_name": pc.target.NodeName, "pod_ip": pc.target.IP})
 	if err != nil {
