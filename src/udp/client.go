@@ -2,22 +2,23 @@ package udp
 
 import (
 	"cnetmon/metrics"
+	"cnetmon/structs"
 	"net"
 	"sync"
 	"time"
 )
 
-func Connect(addr string, m *metrics.Metrics, inLabels []string, wg *sync.WaitGroup) {
+func Connect(target structs.Target, m *metrics.Metrics, inLabels []string, wg *sync.WaitGroup) {
 
 	defer wg.Done()
-	udpServer, err := net.ResolveUDPAddr("udp", addr+":7788")
+	udpServer, err := net.ResolveUDPAddr("udp", target.IP+":7788")
 
 	if err != nil {
 		println("ResolveUDPAddr failed:", err.Error())
 		// os.Exit(1)
 		return
 	}
-	labels := append(inLabels, udpServer.IP.String())
+	labels := append(append(inLabels, target.NodeName), udpServer.IP.String())
 
 	start := time.Now()
 	conn, err := net.DialUDP("udp", nil, udpServer)

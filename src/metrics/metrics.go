@@ -37,7 +37,7 @@ func NewMetrics() *Metrics {
 			Help:    "Time the connect check takes",
 			Buckets: prometheus.ExponentialBuckets(0.125, 2, 16),
 		},
-			[]string{"protocol", "mode", "hostname"},
+			[]string{"protocol", "mode", "node_name", "pod_ip"},
 		),
 		PersistentLifetime: promauto.NewGaugeVec(prometheus.GaugeOpts{
 			Name: "cnetmon_persistent_connection_lifetime",

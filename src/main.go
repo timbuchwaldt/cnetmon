@@ -37,8 +37,8 @@ func main() {
 	go generic_client.Connect(&resolveK8S, &resolveK8SLock, m, []string{"k8s", "tcp"}, tcp.Connect)
 	go generic_client.Connect(&resolveDNSServices, &resolveDNSServicesLock, m, []string{"dns", "tcp"}, tcp.Connect)
 
-	// go generic_client.Connect(&resolveK8S, &resolveK8SLock, m, []string{"k8s", "udp"}, udp.Connect)
-	// go generic_client.Connect(&resolveDNSServices, &resolveDNSServicesLock, m, []string{"dns", "udp"}, udp.Connect)
+	go generic_client.Connect(&resolveK8S, &resolveK8SLock, m, []string{"k8s", "udp"}, udp.Connect)
+	go generic_client.Connect(&resolveDNSServices, &resolveDNSServicesLock, m, []string{"dns", "udp"}, udp.Connect)
 
 	go k8s.UpdateServiceK8S(&resolveK8SLock, &resolveK8S, m)
 	go dns.UpdateServiceDNS(&resolveDNSServicesLock, &resolveDNSServices, m)

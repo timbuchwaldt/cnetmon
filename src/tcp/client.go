@@ -18,7 +18,7 @@ func Connect(target structs.Target, m *metrics.Metrics, inLabels []string, wg *s
 		log.Error().Err(err).Msg("Can't resolve")
 		return
 	}
-	labels := append(inLabels, tcpAddr.IP.String())
+	labels := append(append(inLabels, target.NodeName), tcpAddr.IP.String())
 
 	start := time.Now()
 	dialer := net.Dialer{Timeout: 2 * time.Second}
