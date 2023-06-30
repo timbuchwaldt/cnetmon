@@ -13,6 +13,7 @@ import (
 	"sync"
 
 	"github.com/prometheus/client_golang/prometheus/promhttp"
+	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 
 	_ "go.uber.org/automaxprocs"
@@ -25,6 +26,8 @@ var resolveK8SLock sync.Mutex
 var resolveK8S []structs.Target
 
 func main() {
+	zerolog.SetGlobalLevel(zerolog.InfoLevel)
+
 	m := metrics.NewMetrics()
 	log.Info().Msg("Starting continuous network monitoring cnetmon")
 
