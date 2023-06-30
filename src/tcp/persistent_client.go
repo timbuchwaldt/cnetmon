@@ -78,11 +78,13 @@ func HandlePersistentConnection(pc PersistentConnection, m *metrics.Metrics) {
 	lt, err := m.PersistentLifetime.CurryWith(prometheus.Labels{"direction": "client", "node_name": pc.target.NodeName, "pod_ip": pc.target.IP})
 	if err != nil {
 		log.Error().Err(err).Msg("Can't label")
+		pc.completed = true
 		return
 	}
 	pt, err := m.PingTiming.CurryWith(prometheus.Labels{"node_name": pc.target.NodeName, "pod_ip": pc.target.IP})
 	if err != nil {
 		log.Error().Err(err).Msg("Can't label")
+		pc.completed = true
 		return
 	}
 
@@ -92,6 +94,7 @@ func HandlePersistentConnection(pc PersistentConnection, m *metrics.Metrics) {
 	if err != nil {
 
 		log.Error().Err(err).Msg("Can't connect")
+		pc.completed = true
 		return
 	}
 
@@ -120,6 +123,7 @@ func HandlePersistentConnection(pc PersistentConnection, m *metrics.Metrics) {
 				if err != nil {
 					connLogger.Error().Err(err).Msg("Can't read reply")
 					conn.Close()
+					pc.completed = true
 					return
 				}
 				conn.SetDeadline(time.Now().Add(30 * time.Second))
