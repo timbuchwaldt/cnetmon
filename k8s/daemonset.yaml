@@ -2,7 +2,7 @@ apiVersion: apps/v1
 kind: DaemonSet
 metadata:
   name: cnetmon
-  namespace: default
+  namespace: cnetmon
   labels:
     k8s-app: cnetmon
 spec:
@@ -49,7 +49,7 @@ metadata:
 subjects:
   - kind: ServiceAccount
     name: default
-    namespace: default
+    namespace: cnetmon
 roleRef:
   kind: Role
   name: pod-reader

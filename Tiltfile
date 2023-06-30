@@ -11,7 +11,7 @@ docker_build_with_restart('ctlptl-registry:5005/my-image',
     ]
 )
 
-k8s_yaml(['k8s/daemonset.yaml', 'k8s/service.yaml'])
+k8s_yaml(['k8s/ns.yaml', 'k8s/daemonset.yaml', 'k8s/service.yaml'])
 k8s_resource(workload='cnetmon', port_forwards=7777)
 k8s_resource(workload='cnetmon', port_forwards=2808)
 local_resource('ensure-cluster', cmd="ctlptl apply -f ctlptl/setup.yaml")
