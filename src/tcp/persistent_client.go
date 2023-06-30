@@ -41,6 +41,8 @@ func PersistentConnectionManager(outsideAddresses *[]structs.Target, mutex *sync
 		for _, c := range pcs.connections {
 			if !c.completed {
 				newConnections[c.target] = c
+			} else {
+				log.Info().Str("remoteIP", c.target.IP).Msg("Removing persistent connection")
 			}
 		}
 		pcs.connections = newConnections
@@ -48,6 +50,8 @@ func PersistentConnectionManager(outsideAddresses *[]structs.Target, mutex *sync
 		for _, addr := range addresses {
 			_, contains := pcs.connections[addr]
 			if !contains {
+				log.Info().Str("remoteIP", addr.IP).Msg("Creating persistent connection")
+
 				pcs.connections[addr] = CreatePersistentConnection(addr, m)
 			}
 		}
