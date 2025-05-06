@@ -3,13 +3,15 @@ package udp
 import (
 	"cnetmon/metrics"
 	"cnetmon/structs"
+	"cnetmon/utils"
 	"net"
 	"sync"
 	"time"
+
+	"github.com/prometheus/client_golang/prometheus"
 )
 
-func Connect(target structs.Target, m *metrics.Metrics, inLabels []string, wg *sync.WaitGroup) {
-
+func Connect(target structs.Target, m *metrics.Metrics, labels prometheus.Labels, wg *sync.WaitGroup) {
 	defer wg.Done()
 	udpServer, err := net.ResolveUDPAddr("udp", target.IP+":7788")
 
@@ -18,7 +20,6 @@ func Connect(target structs.Target, m *metrics.Metrics, inLabels []string, wg *s
 		// os.Exit(1)
 		return
 	}
-	labels := append(append(inLabels, target.NodeName), udpServer.IP.String())
 
 	start := time.Now()
 	conn, err := net.DialUDP("udp", nil, udpServer)
@@ -45,5 +46,5 @@ func Connect(target structs.Target, m *metrics.Metrics, inLabels []string, wg *s
 		return
 	}
 	conn.Close()
-	m.Timing.WithLabelValues(labels...).Observe(float64(time.Since(start).Milliseconds()))
+	m.Timing.With(utils.Merge(labels, prometheus.Labels{"dst_node": target.NodeName, "dst_pod_ip": udpServer.IP.String()})).Observe(float64(time.Since(start).Milliseconds()))
 }

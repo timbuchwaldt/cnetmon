@@ -5,9 +5,11 @@ import (
 	"cnetmon/structs"
 	"sync"
 	"time"
+
+	"github.com/prometheus/client_golang/prometheus"
 )
 
-func Connect(outsideAddresses *[]structs.Target, mutex *sync.Mutex, m *metrics.Metrics, labels []string, function func(structs.Target, *metrics.Metrics, []string, *sync.WaitGroup)) {
+func Connect(outsideAddresses *[]structs.Target, mutex *sync.Mutex, m *metrics.Metrics, labels prometheus.Labels, function func(structs.Target, *metrics.Metrics, prometheus.Labels, *sync.WaitGroup)) {
 
 	for {
 		// be ultra-cautious here so we are 100% sure the slice isn't just updated.

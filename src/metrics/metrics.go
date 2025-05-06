@@ -37,17 +37,17 @@ func NewMetrics() *Metrics {
 			Help:    "Time the connect check takes",
 			Buckets: prometheus.ExponentialBuckets(0.125, 2, 16),
 		},
-			[]string{"protocol", "mode", "node_name", "pod_ip"},
+			[]string{"protocol", "mode", "src_node", "dst_node", "dst_pod_ip"},
 		),
 		PersistentLifetime: promauto.NewGaugeVec(prometheus.GaugeOpts{
 			Name: "cnetmon_persistent_connection_lifetime",
 			Help: "Time in seconds a persistent connection is open",
-		}, []string{"direction", "node_name", "pod_ip"}),
+		}, []string{"direction", "src_node", "dst_node", "dst_pod_ip"}),
 		PingTiming: promauto.NewHistogramVec(prometheus.HistogramOpts{
 			Name:    "cnetmon_ping_timing_milliseconds",
 			Help:    "Time in ms it takes to reply to a ping on a persistent TCP connection",
 			Buckets: prometheus.ExponentialBuckets(0.0125, 2, 18),
-		}, []string{"node_name", "pod_ip"}),
+		}, []string{"src_node", "dst_node", "dst_pod_ip"}),
 	}
 	return m
 }
