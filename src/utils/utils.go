@@ -4,6 +4,7 @@ import (
 	"cnetmon/structs"
 	"os"
 
+	"github.com/prometheus/client_golang/prometheus"
 	"github.com/rs/zerolog/log"
 )
 
@@ -30,4 +31,17 @@ func IPTargetInSlice(a structs.Target, list []structs.Target) bool {
 		}
 	}
 	return false
+}
+
+func Merge(labels1 prometheus.Labels, labels2 prometheus.Labels) prometheus.Labels {
+	result := prometheus.Labels{}
+
+	for k, v := range labels1 {
+		result[k] = v
+	}
+	for k, v := range labels2 {
+		result[k] = v
+	}
+
+	return result
 }

@@ -36,7 +36,7 @@ func IsClosed(ch <-chan ConnectionMessage) bool {
 	return false
 }
 
-func PersistentConnectionManager(outsideAddresses *[]structs.Target, mutex *sync.Mutex, m *metrics.Metrics) {
+func PersistentConnectionManager(outsideAddresses *[]structs.Target, labels prometheus.Labels, mutex *sync.Mutex, m *metrics.Metrics) {
 	var pcs = PersistentConnections{
 		connections: map[string]PersistentConnection{},
 	}
@@ -61,7 +61,7 @@ func PersistentConnectionManager(outsideAddresses *[]structs.Target, mutex *sync
 			_, contains := pcs.connections[addr.IP]
 			if !contains {
 				log.Info().Str("remoteIP", addr.IP).Msg("Creating persistent connection")
-				pcs.connections[addr.IP] = CreatePersistentConnection(addr, m)
+				pcs.connections[addr.IP] = CreatePersistentConnection(addr, labels, m)
 			}
 		}
 
@@ -80,25 +80,25 @@ func PersistentConnectionManager(outsideAddresses *[]structs.Target, mutex *sync
 
 }
 
-func CreatePersistentConnection(target structs.Target, m *metrics.Metrics) PersistentConnection {
+func CreatePersistentConnection(target structs.Target, labels prometheus.Labels, m *metrics.Metrics) PersistentConnection {
 	pc := PersistentConnection{
 		c:      make(chan ConnectionMessage, 30),
 		target: target,
 	}
 
-	go HandlePersistentConnection(pc, m)
+	go HandlePersistentConnection(pc, labels, m)
 	return pc
 }
 
-func HandlePersistentConnection(pc PersistentConnection, m *metrics.Metrics) {
+func HandlePersistentConnection(pc PersistentConnection, labels prometheus.Labels, m *metrics.Metrics) {
 	start := time.Now()
-	lt, err := m.PersistentLifetime.CurryWith(prometheus.Labels{"direction": "client", "node_name": pc.target.NodeName, "pod_ip": pc.target.IP})
+	lt, err := m.PersistentLifetime.CurryWith(utils.Merge(labels, prometheus.Labels{"direction": "client", "dst_node": pc.target.NodeName, "dst_pod_ip": pc.target.IP}))
 	if err != nil {
 		log.Error().Err(err).Msg("Can't label")
 		pc.completed = true
 		return
 	}
-	pt, err := m.PingTiming.CurryWith(prometheus.Labels{"node_name": pc.target.NodeName, "pod_ip": pc.target.IP})
+	pt, err := m.PingTiming.CurryWith(utils.Merge(labels, prometheus.Labels{"dst_node": pc.target.NodeName, "dst_pod_ip": pc.target.IP}))
 	if err != nil {
 		log.Error().Err(err).Msg("Can't label")
 		pc.completed = true

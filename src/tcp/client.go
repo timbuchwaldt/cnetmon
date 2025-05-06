@@ -3,14 +3,16 @@ package tcp
 import (
 	"cnetmon/metrics"
 	"cnetmon/structs"
+	"cnetmon/utils"
 	"net"
 	"sync"
 	"time"
 
+	"github.com/prometheus/client_golang/prometheus"
 	"github.com/rs/zerolog/log"
 )
 
-func Connect(target structs.Target, m *metrics.Metrics, inLabels []string, wg *sync.WaitGroup) {
+func Connect(target structs.Target, m *metrics.Metrics, labels prometheus.Labels, wg *sync.WaitGroup) {
 	defer wg.Done()
 	tcpAddr, err := net.ResolveTCPAddr("tcp", target.IP+":7777")
 
@@ -18,7 +20,6 @@ func Connect(target structs.Target, m *metrics.Metrics, inLabels []string, wg *s
 		log.Error().Err(err).Msg("Can't resolve")
 		return
 	}
-	labels := append(append(inLabels, target.NodeName), tcpAddr.IP.String())
 
 	start := time.Now()
 	dialer := net.Dialer{Timeout: 2 * time.Second}
@@ -38,7 +39,7 @@ func Connect(target structs.Target, m *metrics.Metrics, inLabels []string, wg *s
 		log.Error().Err(err).Msg("Can't read reply")
 		return
 	}
-	m.Timing.WithLabelValues(labels...).Observe(float64(time.Since(start).Milliseconds()))
+	m.Timing.With(utils.Merge(labels, prometheus.Labels{"dst_node": target.NodeName, "dst_pod_ip": tcpAddr.IP.String()})).Observe(float64(time.Since(start).Milliseconds()))
 
 	conn.Write([]byte("bye"))
 
