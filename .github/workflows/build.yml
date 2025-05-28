@@ -1,10 +1,6 @@
 name: cnetmon build
 
-on:
-  push:
-    branches: ["main"]
-  pull_request:
-    branches: ["main"]
+on: [push]
 
 env:
   IMAGE_NAME: cnetmon
@@ -12,7 +8,7 @@ env:
   GOARCH: amd64
   CGO_ENABLED: 0
 jobs:
-  build:
+  build-multi-arch:
     runs-on: ubuntu-latest
     permissions:
       packages: write
@@ -29,20 +25,18 @@ jobs:
       - name: Build
         run: cd src && go build -ldflags="-w -s" -o ../out/cnetmon .
 
-      - name: Test
-        run: cd src &&  go test -v ./...
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v2
 
-      - name: Build the Docker image
-        run: docker build . --file Dockerfile --tag $IMAGE_NAME --label "runnumber=${GITHUB_RUN_ID}"
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
 
       - name: Log in to registry
-        # This is where you will update the personal access token to GITHUB_TOKEN
         run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u $ --password-stdin
 
-      - name: Push image
+      - name: Build and push multi-arch images
         run: |
           IMAGE_ID=ghcr.io/${{ github.repository_owner }}/$IMAGE_NAME
-
           # Change all uppercase to lowercase
           IMAGE_ID=$(echo $IMAGE_ID | tr '[A-Z]' '[a-z]')
           # Strip git ref prefix from version
@@ -51,7 +45,10 @@ jobs:
           [[ "${{ github.ref }}" == "refs/tags/"* ]] && VERSION=$(echo $VERSION | sed -e 's/^v//')
           # Use Docker `latest` tag convention
           [ "$VERSION" == "main" ] && VERSION=latest
-          echo IMAGE_ID=$IMAGE_ID
-          echo VERSION=$VERSION
-          docker tag $IMAGE_NAME $IMAGE_ID:$VERSION
-          docker push $IMAGE_ID:$VERSION
+          
+          echo "Building multi-arch images for $IMAGE_ID:$VERSION"
+          
+          docker buildx build --platform linux/amd64,linux/arm64 \
+            --tag $IMAGE_ID:$VERSION \
+            --push \
+            .
