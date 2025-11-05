@@ -4,6 +4,7 @@ import (
 	"cnetmon/metrics"
 	"cnetmon/structs"
 	"cnetmon/utils"
+	"math"
 	"net"
 	"sync"
 	"time"
@@ -17,23 +18,23 @@ func Connect(target structs.Target, m *metrics.Metrics, labels prometheus.Labels
 
 	if err != nil {
 		println("ResolveUDPAddr failed:", err.Error())
-		// os.Exit(1)
 		return
 	}
+
+	metric := m.Timing.With(utils.Merge(labels, prometheus.Labels{"dst_node": target.NodeName, "dst_pod_ip": udpServer.IP.String()}))
 
 	start := time.Now()
 	conn, err := net.DialUDP("udp", nil, udpServer)
 	if err != nil {
 		println("Listen failed:", err.Error())
-		// os.Exit(1)
+		metric.Observe(math.Inf(1))
 		return
 	}
 
-	// close the connection
 	_, err = conn.Write([]byte("This is a UDP message"))
 	if err != nil {
 		println("Write data failed:", err.Error())
-		//os.Exit(1)
+		metric.Observe(math.Inf(1))
 		return
 	}
 
@@ -42,9 +43,9 @@ func Connect(target structs.Target, m *metrics.Metrics, labels prometheus.Labels
 	_, err = conn.Read(buf)
 	if err != nil {
 		println("read data failed:", err.Error())
-		//os.Exit(1)
+		metric.Observe(math.Inf(1))
 		return
 	}
 	conn.Close()
-	m.Timing.With(utils.Merge(labels, prometheus.Labels{"dst_node": target.NodeName, "dst_pod_ip": udpServer.IP.String()})).Observe(float64(time.Since(start).Milliseconds()))
+	metric.Observe(float64(time.Since(start).Milliseconds()))
 }
