@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/rs/zerolog/log"
+	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -37,6 +38,19 @@ func UpdateServiceK8S(lock *sync.Mutex, services *[]structs.Target, m *metrics.M
 				// This can be null if the IP hasn't been assigned yet -> Hopefully it appears in the next iteration
 				break
 			}
+
+			// Don't test connectivity to pods that aren't ready.
+			ready := false
+			for _, condition := range p.Status.Conditions {
+				if condition.Type == corev1.PodReady && condition.Status == corev1.ConditionTrue {
+					ready = true
+					break
+				}
+			}
+			if !ready {
+				continue
+			}
+
 			t := structs.Target{
 				NodeName: p.Spec.NodeName,
 				IP:       p.Status.PodIP,
