@@ -18,9 +18,12 @@ func NewMetrics() *Metrics {
 	m := &Metrics{
 
 		ResolutionTiming: promauto.NewHistogramVec(prometheus.HistogramOpts{
-			Name:    "cnetmon_resolution_timing_milliseconds",
-			Help:    "Time the pod resolution takes",
-			Buckets: prometheus.ExponentialBuckets(0.125, 2, 16),
+			Name:                            "cnetmon_resolution_timing_milliseconds",
+			Help:                            "Time the pod resolution takes",
+			Buckets:                         prometheus.ExponentialBuckets(0.125, 2, 16),
+			NativeHistogramBucketFactor:     1.1,
+			NativeHistogramMaxBucketNumber:  160,
+			NativeHistogramMinResetDuration: 0,
 		},
 			[]string{"mode"},
 		),
@@ -33,9 +36,12 @@ func NewMetrics() *Metrics {
 			Help: "Number of hosts resolved via kubernetes API",
 		}),
 		Timing: promauto.NewHistogramVec(prometheus.HistogramOpts{
-			Name:    "cnetmon_timing_milliseconds",
-			Help:    "Time the connect check takes",
-			Buckets: prometheus.ExponentialBuckets(0.125, 2, 16),
+			Name:                            "cnetmon_timing_milliseconds",
+			Help:                            "Time the connect check takes",
+			Buckets:                         prometheus.ExponentialBuckets(0.125, 2, 16),
+			NativeHistogramBucketFactor:     1.1,
+			NativeHistogramMaxBucketNumber:  160,
+			NativeHistogramMinResetDuration: 0,
 		},
 			[]string{"protocol", "mode", "src_node", "dst_node", "dst_pod_ip"},
 		),
@@ -44,9 +50,12 @@ func NewMetrics() *Metrics {
 			Help: "Time in seconds a persistent connection is open",
 		}, []string{"direction", "src_node", "dst_node", "dst_pod_ip"}),
 		PingTiming: promauto.NewHistogramVec(prometheus.HistogramOpts{
-			Name:    "cnetmon_ping_timing_milliseconds",
-			Help:    "Time in ms it takes to reply to a ping on a persistent TCP connection",
-			Buckets: prometheus.ExponentialBuckets(0.0125, 2, 18),
+			Name:                            "cnetmon_ping_timing_milliseconds",
+			Help:                            "Time in ms it takes to reply to a ping on a persistent TCP connection",
+			Buckets:                         prometheus.ExponentialBuckets(0.0125, 2, 18),
+			NativeHistogramBucketFactor:     1.1,
+			NativeHistogramMaxBucketNumber:  160,
+			NativeHistogramMinResetDuration: 0,
 		}, []string{"src_node", "dst_node", "dst_pod_ip"}),
 	}
 	return m
